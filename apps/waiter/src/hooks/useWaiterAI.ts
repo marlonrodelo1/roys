@@ -100,7 +100,7 @@ export function useWaiterAI(
       history: historyRef.current,
     });
     return response.text;
-  }, [isConnectedToOpenClaw, buildSystemPrompt, sessionId, tableNumber, restaurant, categories, menuItems, currentOrder]);
+  }, [isConnectedToOpenClaw, tableNumber, restaurant, categories, menuItems, currentOrder]);
 
   const sendMessage = useCallback(async (text: string): Promise<string> => {
     const userMsg: Message = {
