@@ -12,10 +12,9 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/dashboard/node_modules ./apps/dashboard/node_modules
 COPY packages/shared ./packages/shared
 COPY apps/dashboard ./apps/dashboard
-COPY package.json package-lock.json ./
+COPY package.json ./
 WORKDIR /app/apps/dashboard
 RUN npm run build
 
@@ -26,6 +25,5 @@ ENV NODE_ENV=production
 ENV PORT=3000
 COPY --from=builder /app/apps/dashboard/.next/standalone ./
 COPY --from=builder /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
-COPY --from=builder /app/apps/dashboard/public ./apps/dashboard/public 2>/dev/null || true
 EXPOSE 3000
 CMD ["node", "apps/dashboard/server.js"]
