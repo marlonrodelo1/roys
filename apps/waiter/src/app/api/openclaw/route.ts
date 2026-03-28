@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * al gateway real, evitando problemas de CORS.
  */
 
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_URL || '';
+const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || process.env.NEXT_PUBLIC_OPENCLAW_URL || '';
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || process.env.NEXT_PUBLIC_OPENCLAW_TOKEN || '';
 
 export async function POST(request: NextRequest) {

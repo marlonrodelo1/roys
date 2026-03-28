@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
  * Intenta hacer GET a /v1/models del gateway.
  */
 
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_URL || '';
+const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || process.env.NEXT_PUBLIC_OPENCLAW_URL || '';
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || process.env.NEXT_PUBLIC_OPENCLAW_TOKEN || '';
 
 export async function GET() {
