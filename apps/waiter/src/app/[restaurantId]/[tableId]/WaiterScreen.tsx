@@ -97,16 +97,16 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   const itemCount = currentOrder.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-white via-amber-50/30 to-amber-50/50" style={{ height: '100dvh' }}>
+    <div className="fixed inset-0 flex flex-col bg-black" style={{ height: '100dvh' }}>
 
       {/* === HEADER — Fixed top === */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-20">
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-sm border-b border-white/5 z-20">
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-display text-[10px] tracking-[0.2em] text-gray-400 uppercase">Mesa {tableNumber}</p>
-            <span className={`w-1.5 h-1.5 rounded-full ${isConnectedToOpenClaw ? 'bg-green-500' : 'bg-amber-400'}`} title={isConnectedToOpenClaw ? 'IA conectada' : 'Modo demo'} />
+            <p className="font-display text-[10px] tracking-[0.2em] text-gray-500 uppercase">Mesa {tableNumber}</p>
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnectedToOpenClaw ? 'bg-cyan-500 shadow-[0_0_6px_rgba(0,220,255,0.6)]' : 'bg-amber-400'}`} title={isConnectedToOpenClaw ? 'IA conectada' : 'Modo demo'} />
           </div>
-          <p className="font-body text-sm font-medium text-gray-700">{restaurant.name}</p>
+          <p className="font-body text-sm font-medium text-gray-300">{restaurant.name}</p>
         </div>
 
         {/* Order badge */}
@@ -114,14 +114,14 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
           {itemCount > 0 && (
             <motion.button
               onClick={() => setOrderPanelOpen(true)}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 active:scale-95 transition-transform"
+              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/50 border border-cyan-500/30 active:scale-95 transition-transform"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
             >
-              <ShoppingBag size={14} className="text-amber-600" />
-              <span className="text-xs font-semibold text-amber-700">{orderTotal.toFixed(2)}€</span>
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+              <ShoppingBag size={14} className="text-cyan-400" />
+              <span className="text-xs font-semibold text-cyan-300">{orderTotal.toFixed(2)}€</span>
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-cyan-500 text-black text-[10px] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(0,220,255,0.4)]">
                 {itemCount}
               </span>
             </motion.button>
@@ -145,7 +145,7 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
       </main>
 
       {/* === FOOTER — Fixed bottom, NEVER moves === */}
-      <footer className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-100 z-20 pb-[env(safe-area-inset-bottom)]">
+      <footer className="flex-shrink-0 bg-black/80 backdrop-blur-sm border-t border-white/5 z-20 pb-[env(safe-area-inset-bottom)]">
         <VoiceInterface
           isListening={isListening}
           isSpeaking={isSpeaking}

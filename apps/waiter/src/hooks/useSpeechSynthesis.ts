@@ -23,8 +23,23 @@ export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisRe
 
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      const match = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-      voiceRef.current = match || voices[0] || null;
+      const langPrefix = lang.split('-')[0];
+      const langVoices = voices.filter(v => v.lang.startsWith(langPrefix));
+
+      // Prefer natural/neural voices over robotic ones
+      // Priority: Google > Microsoft Online (Neural) > other non-default > any
+      const naturalKeywords = ['google', 'neural', 'natural', 'online', 'enhanced', 'premium'];
+      const roboticKeywords = ['espeak', 'mbrola', 'festival'];
+
+      const ranked = langVoices
+        .filter(v => !roboticKeywords.some(k => v.name.toLowerCase().includes(k)))
+        .sort((a, b) => {
+          const scoreA = naturalKeywords.filter(k => a.name.toLowerCase().includes(k)).length;
+          const scoreB = naturalKeywords.filter(k => b.name.toLowerCase().includes(k)).length;
+          return scoreB - scoreA;
+        });
+
+      voiceRef.current = ranked[0] || langVoices[0] || voices[0] || null;
     };
 
     loadVoices();
@@ -71,7 +86,8 @@ export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisRe
     setTimeout(() => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
-      utterance.rate = 0.9;
+      utterance.rate = 0.95;
+      utterance.pitch = 1.05;
       utterance.volume = 1;
 
       if (voiceRef.current) {

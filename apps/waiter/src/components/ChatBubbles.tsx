@@ -40,8 +40,8 @@ export default function ChatBubbles({ messages, isThinking }: ChatBubblesProps) 
             <div
               className={`max-w-[80%] px-3.5 py-2.5 text-[13px] font-body leading-relaxed shadow-sm ${
                 msg.role === 'user'
-                  ? 'bg-amber-500 text-white rounded-2xl rounded-br-md'
-                  : 'bg-white text-gray-800 rounded-2xl rounded-bl-md border border-gray-100'
+                  ? 'bg-cyan-600 text-white rounded-2xl rounded-br-md'
+                  : 'bg-white/10 text-gray-200 rounded-2xl rounded-bl-md border border-white/10'
               }`}
               style={{ whiteSpace: 'pre-line' }}
             >
@@ -60,11 +60,11 @@ export default function ChatBubbles({ messages, isThinking }: ChatBubblesProps) 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm flex items-center gap-1">
+            <div className="bg-white/10 border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm flex items-center gap-1">
               {[0, 1, 2].map((i) => (
                 <motion.span
                   key={i}
-                  className="w-2 h-2 rounded-full bg-amber-400"
+                  className="w-2 h-2 rounded-full bg-cyan-400"
                   animate={{ y: [0, -6, 0] }}
                   transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
                 />
