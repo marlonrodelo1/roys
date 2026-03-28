@@ -31,20 +31,20 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   } = useWaiterAI(restaurant, categories, menuItems, tableNumber);
 
   const { transcript, isListening, startListening, stopListening, isSupported: sttSupported } = useSpeechRecognition(lang);
-  const { speak, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis(lang);
+  const { speak, isSpeaking } = useSpeechSynthesis(lang);
 
   const [orderPanelOpen, setOrderPanelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [greeted, setGreeted] = useState(false);
-  const lastInputWasVoice = useRef(false);
+  const ttsUnlocked = useRef(false);
+  const pendingVoiceResponse = useRef(false);
 
-  // Auto-greet on mount (text only — browsers block auto-play audio)
+  // Auto-greet on mount (text only)
   useEffect(() => {
     if (!greeted) {
       setGreeted(true);
-      const timer = setTimeout(async () => {
-        lastInputWasVoice.current = false;
-        await sendMessage('hola');
+      const timer = setTimeout(() => {
+        sendMessage('hola');
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -64,23 +64,35 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
     }
   }, [isSpeaking, orbState, setOrbState]);
 
+  // Unlock TTS on first user touch (required by mobile browsers)
+  const unlockTTS = useCallback(() => {
+    if (!ttsUnlocked.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance('');
+      utterance.volume = 0;
+      window.speechSynthesis.speak(utterance);
+      ttsUnlocked.current = true;
+    }
+  }, []);
+
   const handleStartListening = useCallback(() => {
     if (isSpeaking) return;
+    unlockTTS(); // Unlock TTS on user gesture
     startListening();
-  }, [isSpeaking, startListening]);
+    pendingVoiceResponse.current = true;
+  }, [isSpeaking, startListening, unlockTTS]);
 
-  const handleStopListening = useCallback(async () => {
+  const handleStopListening = useCallback(() => {
     stopListening();
-    await new Promise(resolve => setTimeout(resolve, 300));
   }, [stopListening]);
 
-  // Process transcript when listening stops — VOICE input → VOICE response
+  // When listening stops and we have a transcript, process with voice response
   useEffect(() => {
-    if (!isListening && transcript) {
-      lastInputWasVoice.current = true;
+    if (!isListening && transcript && pendingVoiceResponse.current) {
+      pendingVoiceResponse.current = false;
       (async () => {
         const response = await sendMessage(transcript);
-        if (ttsSupported) speak(response);
+        // Speak the response — TTS was unlocked during touchStart
+        speak(response);
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,17 +100,15 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
 
   // TEXT input → TEXT only response (no TTS)
   const handleSendText = useCallback(async (text: string) => {
-    lastInputWasVoice.current = false;
     await sendMessage(text);
-    // No speak() — text input gets text-only response
   }, [sendMessage]);
 
   const handleConfirmOrder = useCallback(async () => {
     await confirmOrder();
-    if (lastInputWasVoice.current && ttsSupported) {
+    if (ttsUnlocked.current) {
       speak('Pedido confirmado. Tu pedido llegara en breve.');
     }
-  }, [confirmOrder, speak, ttsSupported]);
+  }, [confirmOrder, speak]);
 
   return (
     <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-white">
@@ -119,7 +129,6 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
           <p className="font-body text-sm text-gray-500">{restaurant.name}</p>
         </div>
 
-        {/* Order badge */}
         {currentOrder.length > 0 && (
           <motion.button
             onClick={() => setOrderPanelOpen(true)}
@@ -154,7 +163,6 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
         />
       </div>
 
-      {/* Order Panel */}
       <OrderSummary
         items={currentOrder}
         total={orderTotal}
@@ -166,7 +174,6 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
         }}
       />
 
-      {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
