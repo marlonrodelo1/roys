@@ -67,10 +67,13 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   // Unlock TTS on first user touch (required by mobile browsers)
   const unlockTTS = useCallback(() => {
     if (!ttsUnlocked.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance('');
-      utterance.volume = 0;
+      // Speak a real short word to fully unlock audio context
+      const utterance = new SpeechSynthesisUtterance('.');
+      utterance.volume = 0.01;
+      utterance.rate = 10; // fastest possible so it's instant
       window.speechSynthesis.speak(utterance);
       ttsUnlocked.current = true;
+      console.log('[TTS] Unlocked via user gesture');
     }
   }, []);
 
