@@ -31,15 +31,14 @@ export default function ParticleBackground() {
     resize();
     window.addEventListener('resize', resize);
 
-    // Initialize particles
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 40; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         size: Math.random() * 2 + 0.5,
-        speedX: (Math.random() - 0.5) * 0.3,
-        speedY: (Math.random() - 0.5) * 0.3,
-        opacity: Math.random() * 0.2 + 0.1,
+        speedX: (Math.random() - 0.5) * 0.2,
+        speedY: (Math.random() - 0.5) * 0.2,
+        opacity: Math.random() * 0.15 + 0.05,
       });
     }
 
@@ -50,7 +49,6 @@ export default function ParticleBackground() {
         p.x += p.speedX;
         p.y += p.speedY;
 
-        // Wrap around
         if (p.x < 0) p.x = canvas.width;
         if (p.x > canvas.width) p.x = 0;
         if (p.y < 0) p.y = canvas.height;
@@ -58,7 +56,7 @@ export default function ParticleBackground() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 212, 255, ${p.opacity})`;
+        ctx.fillStyle = `rgba(245, 158, 11, ${p.opacity})`;
         ctx.fill();
       });
 
@@ -77,7 +75,7 @@ export default function ParticleBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ background: '#050508' }}
+      style={{ background: 'linear-gradient(180deg, #ffffff 0%, #fffbeb 50%, #fef3c7 100%)' }}
     />
   );
 }

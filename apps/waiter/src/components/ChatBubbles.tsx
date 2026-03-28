@@ -31,8 +31,8 @@ export default function ChatBubbles({ messages }: ChatBubblesProps) {
             <div
               className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-body leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-accent-red/20 text-white/90 rounded-br-sm backdrop-blur-md border border-accent-red/20'
-                  : 'bg-white/5 text-white/80 rounded-bl-sm backdrop-blur-md border border-white/10'
+                  ? 'bg-amber-500 text-white rounded-br-sm shadow-md'
+                  : 'bg-gray-100 text-gray-800 rounded-bl-sm shadow-sm border border-gray-200'
               }`}
               style={{ whiteSpace: 'pre-line' }}
             >

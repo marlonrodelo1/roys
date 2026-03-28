@@ -33,35 +33,33 @@ export default function ConfirmDialog({ isOpen, onClose, onConfirm, total, itemC
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute inset-0 bg-black/20" onClick={onClose} />
 
-          {/* Dialog */}
           <motion.div
-            className="relative bg-[#0a0a14]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 max-w-sm w-full"
+            className="relative bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
           >
             {!confirmed ? (
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-accent-red/10 border border-accent-red/30 flex items-center justify-center">
-                  <Sparkles size={28} className="text-accent-red" />
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+                  <Sparkles size={28} className="text-amber-500" />
                 </div>
-                <h3 className="font-display text-xl tracking-wide">Confirmar Pedido</h3>
-                <p className="text-sm text-white/50">
-                  {itemCount} {itemCount === 1 ? 'artículo' : 'artículos'} • Total: <span className="text-accent-cyan font-semibold">{total.toFixed(2)}€</span>
+                <h3 className="font-display text-xl tracking-wide text-gray-800">Confirmar Pedido</h3>
+                <p className="text-sm text-gray-500">
+                  {itemCount} {itemCount === 1 ? 'articulo' : 'articulos'} — Total: <span className="text-amber-600 font-semibold">{total.toFixed(2)}€</span>
                 </p>
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={onClose}
-                    className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 font-body text-sm"
+                    className="flex-1 py-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 font-body text-sm"
                   >
                     Cancelar
                   </button>
                   <motion.button
                     onClick={handleConfirm}
-                    className="flex-1 py-3 rounded-xl bg-accent-red/20 border border-accent-red/40 text-accent-red font-display text-sm tracking-wider"
+                    className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-display text-sm tracking-wider shadow-md"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -76,15 +74,15 @@ export default function ConfirmDialog({ isOpen, onClose, onConfirm, total, itemC
                 animate={{ opacity: 1, scale: 1 }}
               >
                 <motion.div
-                  className="w-20 h-20 mx-auto rounded-full bg-accent-green/20 border-2 border-accent-green flex items-center justify-center"
+                  className="w-20 h-20 mx-auto rounded-full bg-green-50 border-2 border-green-500 flex items-center justify-center"
                   initial={{ scale: 0 }}
                   animate={{ scale: [0, 1.2, 1] }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Check size={36} className="text-accent-green" />
+                  <Check size={36} className="text-green-500" />
                 </motion.div>
-                <h3 className="font-display text-xl tracking-wide text-accent-green">¡Pedido Confirmado!</h3>
-                <p className="text-sm text-white/50">Tu pedido llegará en breve</p>
+                <h3 className="font-display text-xl tracking-wide text-green-600">Pedido Confirmado!</h3>
+                <p className="text-sm text-gray-500">Tu pedido llegara en breve</p>
               </motion.div>
             )}
           </motion.div>

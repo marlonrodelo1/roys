@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Restaurant, MenuCategory, MenuItem } from '@roys/shared/types';
 import { useWaiterAI } from '../../../hooks/useWaiterAI';
 import { useSpeechRecognition } from '../../../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../../../hooks/useSpeechSynthesis';
 import ParticleBackground from '../../../components/ParticleBackground';
 import OrbAvatar from '../../../components/OrbAvatar';
-import WaveVisualizer from '../../../components/WaveVisualizer';
 import ChatBubbles from '../../../components/ChatBubbles';
 import VoiceInterface from '../../../components/VoiceInterface';
 import OrderSummary from '../../../components/OrderSummary';
@@ -37,12 +36,14 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   const [orderPanelOpen, setOrderPanelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [greeted, setGreeted] = useState(false);
+  const lastInputWasVoice = useRef(false);
 
-  // Auto-greet on mount
+  // Auto-greet on mount (voice greeting)
   useEffect(() => {
     if (!greeted) {
       setGreeted(true);
       const timer = setTimeout(async () => {
+        lastInputWasVoice.current = true;
         const response = await sendMessage('hola');
         if (ttsSupported) speak(response);
       }, 1500);
@@ -71,63 +72,65 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
 
   const handleStopListening = useCallback(async () => {
     stopListening();
-    // Wait a tick for final transcript
     await new Promise(resolve => setTimeout(resolve, 300));
   }, [stopListening]);
 
-  // Process transcript when listening stops
+  // Process transcript when listening stops — VOICE input → VOICE response
   useEffect(() => {
     if (!isListening && transcript) {
+      lastInputWasVoice.current = true;
       (async () => {
         const response = await sendMessage(transcript);
         if (ttsSupported) speak(response);
       })();
     }
-    // Only trigger when isListening changes to false with a transcript
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening]);
 
+  // TEXT input → TEXT only response (no TTS)
   const handleSendText = useCallback(async (text: string) => {
-    const response = await sendMessage(text);
-    if (ttsSupported) speak(response);
-  }, [sendMessage, speak, ttsSupported]);
+    lastInputWasVoice.current = false;
+    await sendMessage(text);
+    // No speak() — text input gets text-only response
+  }, [sendMessage]);
 
   const handleConfirmOrder = useCallback(async () => {
     await confirmOrder();
-    const confirmText = '¡Pedido confirmado! Tu pedido llegará en breve. ¿Necesitas algo más?';
-    if (ttsSupported) speak(confirmText);
+    if (lastInputWasVoice.current && ttsSupported) {
+      speak('Pedido confirmado. Tu pedido llegara en breve.');
+    }
   }, [confirmOrder, speak, ttsSupported]);
 
   return (
-    <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-[#050508]">
+    <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-white">
       <ParticleBackground />
 
       {/* Header */}
       <div className="relative z-10 w-full flex items-center justify-between px-4 pt-4 pb-2">
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-display text-xs tracking-widest text-white/30">MESA {tableNumber}</p>
+            <p className="font-display text-xs tracking-widest text-gray-400">MESA {tableNumber}</p>
             <div className="flex items-center gap-1" title={isConnectedToOpenClaw ? 'OpenClaw conectado' : 'Mock IA'}>
-              <span className={`w-2 h-2 rounded-full ${isConnectedToOpenClaw ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]' : 'bg-yellow-400 shadow-[0_0_6px_rgba(250,204,21,0.6)]'}`} />
-              <span className="font-display text-[9px] tracking-wider text-white/25">
+              <span className={`w-2 h-2 rounded-full ${isConnectedToOpenClaw ? 'bg-green-500' : 'bg-amber-400'}`} />
+              <span className="font-display text-[9px] tracking-wider text-gray-400">
                 {isConnectedToOpenClaw ? 'AI' : 'MOCK'}
               </span>
             </div>
           </div>
-          <p className="font-body text-sm text-white/50">{restaurant.name}</p>
+          <p className="font-body text-sm text-gray-500">{restaurant.name}</p>
         </div>
 
         {/* Order badge */}
         {currentOrder.length > 0 && (
           <motion.button
             onClick={() => setOrderPanelOpen(true)}
-            className="relative flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10"
+            className="relative flex items-center gap-2 px-3 py-2 rounded-full bg-amber-50 border border-amber-200"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <ShoppingBag size={16} className="text-accent-cyan" />
-            <span className="text-sm font-display text-accent-cyan">{orderTotal.toFixed(2)}€</span>
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-red text-[10px] font-bold flex items-center justify-center">
+            <ShoppingBag size={16} className="text-amber-600" />
+            <span className="text-sm font-display text-amber-700">{orderTotal.toFixed(2)}€</span>
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
               {currentOrder.reduce((sum, item) => sum + item.quantity, 0)}
             </span>
           </motion.button>
@@ -136,10 +139,7 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
 
       {/* Orb Area */}
       <div className="relative z-10 flex-1 flex items-center justify-center">
-        <div className="relative">
-          <OrbAvatar state={orbState} />
-          <WaveVisualizer state={orbState} />
-        </div>
+        <OrbAvatar state={orbState} />
       </div>
 
       {/* Chat + Voice */}

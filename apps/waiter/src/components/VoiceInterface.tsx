@@ -41,11 +41,11 @@ export default function VoiceInterface({
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
             placeholder="Escribe tu mensaje..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-full px-5 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-accent-cyan/50 backdrop-blur-md font-body"
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 font-body"
           />
           <motion.button
             onClick={handleTextSubmit}
-            className="w-12 h-12 rounded-full bg-accent-cyan/20 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan"
+            className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-white shadow-md"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -60,8 +60,8 @@ export default function VoiceInterface({
           <motion.button
             className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-colors ${
               isListening
-                ? 'bg-accent-red/30 border-2 border-accent-red shadow-[0_0_30px_rgba(233,69,96,0.4)]'
-                : 'bg-white/5 border-2 border-white/20'
+                ? 'bg-amber-500 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.4)]'
+                : 'bg-gray-100 border-2 border-gray-200'
             }`}
             onPointerDown={onStartListening}
             onPointerUp={onStopListening}
@@ -70,18 +70,18 @@ export default function VoiceInterface({
             whileTap={{ scale: 0.95 }}
             disabled={isSpeaking}
           >
-            <Mic size={28} className={isListening ? 'text-accent-red' : 'text-white/60'} />
+            <Mic size={28} className={isListening ? 'text-white' : 'text-gray-500'} />
 
             {/* Pulse rings when listening */}
             {isListening && (
               <>
                 <motion.div
-                  className="absolute inset-0 rounded-full border border-accent-red/30"
+                  className="absolute inset-0 rounded-full border border-amber-400/40"
                   animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                   transition={{ duration: 1.2, repeat: Infinity }}
                 />
                 <motion.div
-                  className="absolute inset-0 rounded-full border border-accent-red/20"
+                  className="absolute inset-0 rounded-full border border-amber-300/30"
                   animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
                 />
@@ -94,7 +94,7 @@ export default function VoiceInterface({
         {isSupported && (
           <motion.button
             onClick={() => setShowTextInput(prev => !prev)}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40"
+            className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -104,8 +104,8 @@ export default function VoiceInterface({
       </div>
 
       {isSupported && !isListening && !isSpeaking && (
-        <p className="text-text-dim text-xs font-display tracking-wider">
-          MANTÉN PULSADO PARA HABLAR
+        <p className="text-gray-400 text-xs font-display tracking-wider">
+          MANTEN PULSADO PARA HABLAR
         </p>
       )}
     </div>

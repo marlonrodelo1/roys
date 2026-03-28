@@ -3,19 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #050508;
-  --orb-idle: radial-gradient(circle, #1a1a3e, #0a0a1a);
-  --orb-listening: radial-gradient(circle, #E94560, #8b1a2b);
-  --orb-speaking: radial-gradient(circle, #00d4ff, #0F3460);
-  --orb-thinking: radial-gradient(circle, #16C79A, #0a3d2e);
-  --accent: #E94560;
-}
-
 body {
   font-family: 'Outfit', sans-serif;
-  background-color: var(--bg);
-  color: #e0e0e0;
+  background-color: #ffffff;
+  color: #1f2937;
   overflow: hidden;
 }
 
