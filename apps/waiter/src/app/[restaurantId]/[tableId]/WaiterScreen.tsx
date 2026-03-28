@@ -38,18 +38,17 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   const [greeted, setGreeted] = useState(false);
   const lastInputWasVoice = useRef(false);
 
-  // Auto-greet on mount (voice greeting)
+  // Auto-greet on mount (text only — browsers block auto-play audio)
   useEffect(() => {
     if (!greeted) {
       setGreeted(true);
       const timer = setTimeout(async () => {
-        lastInputWasVoice.current = true;
-        const response = await sendMessage('hola');
-        if (ttsSupported) speak(response);
+        lastInputWasVoice.current = false;
+        await sendMessage('hola');
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [greeted, sendMessage, speak, ttsSupported]);
+  }, [greeted, sendMessage]);
 
   // Sync orb state with speech
   useEffect(() => {

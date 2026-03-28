@@ -31,6 +31,19 @@ export default function VoiceInterface({
     }
   }, [textInput, onSendText]);
 
+  // Prevent text selection and default touch behavior on mic button
+  const handleMicDown = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onStartListening();
+  }, [onStartListening]);
+
+  const handleMicUp = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onStopListening();
+  }, [onStopListening]);
+
   return (
     <div className="w-full flex flex-col items-center gap-3 px-4">
       {showTextInput && (
@@ -55,20 +68,22 @@ export default function VoiceInterface({
       )}
 
       <div className="flex items-center gap-4">
-        {/* Mic button */}
+        {/* Mic button - uses touch events for mobile */}
         {isSupported && (
-          <motion.button
-            className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-colors ${
+          <button
+            className={`relative w-20 h-20 rounded-full flex items-center justify-center select-none touch-none ${
               isListening
                 ? 'bg-amber-500 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.4)]'
                 : 'bg-gray-100 border-2 border-gray-200'
-            }`}
-            onPointerDown={onStartListening}
-            onPointerUp={onStopListening}
-            onPointerLeave={onStopListening}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={isSpeaking}
+            } ${isSpeaking ? 'opacity-50' : ''}`}
+            onTouchStart={!isSpeaking ? handleMicDown : undefined}
+            onTouchEnd={!isSpeaking ? handleMicUp : undefined}
+            onTouchCancel={!isSpeaking ? handleMicUp : undefined}
+            onMouseDown={!isSpeaking ? handleMicDown : undefined}
+            onMouseUp={!isSpeaking ? handleMicUp : undefined}
+            onMouseLeave={isListening ? handleMicUp : undefined}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
           >
             <Mic size={28} className={isListening ? 'text-white' : 'text-gray-500'} />
 
@@ -87,24 +102,22 @@ export default function VoiceInterface({
                 />
               </>
             )}
-          </motion.button>
+          </button>
         )}
 
         {/* Toggle text input */}
         {isSupported && (
-          <motion.button
+          <button
             onClick={() => setShowTextInput(prev => !prev)}
-            className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 active:bg-gray-200"
           >
             <Keyboard size={16} />
-          </motion.button>
+          </button>
         )}
       </div>
 
       {isSupported && !isListening && !isSpeaking && (
-        <p className="text-gray-400 text-xs font-display tracking-wider">
+        <p className="text-gray-400 text-xs font-display tracking-wider select-none">
           MANTEN PULSADO PARA HABLAR
         </p>
       )}
