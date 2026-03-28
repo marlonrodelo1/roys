@@ -1,24 +1,14 @@
-FROM node:20-alpine AS deps
+FROM node:20-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/dashboard/package.json ./apps/dashboard/
 RUN npm ci
-
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY packages/shared ./packages/shared
 COPY apps/dashboard ./apps/dashboard
-COPY package.json ./
 WORKDIR /app/apps/dashboard
 RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-COPY --from=builder /app/apps/dashboard/.next/standalone ./
-COPY --from=builder /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
 EXPOSE 3000
-CMD ["node", "apps/dashboard/server.js"]
+CMD ["npx", "next", "start", "-p", "3000"]
