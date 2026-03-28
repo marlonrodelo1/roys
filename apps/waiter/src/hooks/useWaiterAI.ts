@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { MenuItem, MenuCategory, Restaurant } from '@roys/shared/types';
 import { processMockMessage, type DetectedItem } from '../lib/mockAI';
-import { sendToOpenClaw, checkOpenClawHealth, type OpenClawMessage } from '../lib/openclawClient';
+import { sendToOpenClaw, checkOpenClawHealth } from '../lib/openclawClient';
 import { supabase } from '../lib/supabase';
 
 export type OrbState = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -73,70 +73,16 @@ export function useWaiterAI(
   }, [sessionId]);
 
   /**
-   * Build the system prompt for OpenClaw with restaurant context.
-   */
-  const buildSystemPrompt = useCallback((): string => {
-    const menuText = categories
-      .filter(c => c.is_active)
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map(cat => {
-        const items = menuItems
-          .filter(i => i.category_id === cat.id && i.is_available)
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map(i => {
-            let line = `- ${i.name}: ${i.price.toFixed(2)}€`;
-            if (i.description) line += ` (${i.description})`;
-            if (i.allergens.length > 0) line += ` [Alérgenos: ${i.allergens.join(', ')}]`;
-            if (i.pairing_suggestion) line += ` Maridaje: ${i.pairing_suggestion}`;
-            if (i.chef_note) line += ` Chef: ${i.chef_note}`;
-            return line;
-          })
-          .join('\n');
-        return `## ${cat.name}\n${items}`;
-      })
-      .join('\n\n');
-
-    const orderText = currentOrder.length > 0
-      ? `\n\nPEDIDO ACTUAL:\n${currentOrder.map(i => `- ${i.quantity}x ${i.name} (${(i.price * i.quantity).toFixed(2)}€)`).join('\n')}\nTotal: ${orderTotal.toFixed(2)}€`
-      : '';
-
-    return `Eres ${restaurant.bot_name || 'Roys'}, un camarero IA del restaurante "${restaurant.name}". Tu tono es ${restaurant.bot_tone === 'friendly' ? 'cercano y amigable' : restaurant.bot_tone === 'formal' ? 'formal y elegante' : 'divertido y casual'}. Hablas en ${restaurant.bot_language === 'es' ? 'español' : restaurant.bot_language}.
-
-MENÚ DEL RESTAURANTE:
-${menuText}${orderText}
-
-INSTRUCCIONES:
-- Saluda al cliente y ofrece la carta.
-- Cuando el cliente pida un plato, confírmalo y sugiere maridaje si existe.
-- Informa de alérgenos cuando sea relevante.
-- Cuando el cliente diga que no quiere nada más, resume el pedido con precios y total.
-- Sé conciso y natural, como un camarero real.
-- Responde SOLO con texto, sin markdown ni formateo especial.`;
-  }, [restaurant, categories, menuItems, currentOrder, orderTotal]);
-
-  /**
-   * Intenta enviar a OpenClaw. Si falla, usa mock como fallback.
+   * Intenta enviar a OpenClaw bridge. Si falla, usa mock como fallback.
    */
   const getAIResponse = useCallback(async (text: string): Promise<string> => {
-    // Try OpenClaw first if connected
     if (isConnectedToOpenClaw) {
       try {
-        const openclawMessages: OpenClawMessage[] = [
-          { role: 'system', content: buildSystemPrompt() },
-          ...historyRef.current.map(m => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          })),
-          { role: 'user' as const, content: text },
-        ];
-
-        const sessionKey = sessionId || `table-${tableNumber}`;
-        const response = await sendToOpenClaw(openclawMessages, tableNumber, sessionKey);
+        const response = await sendToOpenClaw(text, tableNumber);
         return response;
       } catch (error) {
         console.warn('OpenClaw failed, falling back to mock:', error);
         setIsConnectedToOpenClaw(false);
-        // Schedule a re-check in 10s
         setTimeout(async () => {
           const healthy = await checkOpenClawHealth();
           setIsConnectedToOpenClaw(healthy);

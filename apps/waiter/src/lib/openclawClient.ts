@@ -1,91 +1,58 @@
 /**
- * Cliente OpenClaw Gateway
+ * Cliente OpenClaw — se conecta al bridge HTTP en el VPS.
+ * El bridge ejecuta el CLI de OpenClaw y devuelve la respuesta.
  *
- * Se conecta al gateway via HTTP API (compatible OpenAI).
- * Endpoint: POST /v1/chat/completions
- * Auth: Bearer token
- * Routing: model = "openclaw/<agentId>" para dirigir al agente correcto
+ * Flujo: Frontend → /api/chat → Bridge (VPS:3333) → openclaw CLI → agente IA
  */
-
-export interface OpenClawMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface OpenClawResponse {
-  id: string;
-  choices: {
-    index: number;
-    message: {
-      role: 'assistant';
-      content: string;
-    };
-    finish_reason: string;
-  }[];
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
 
 /**
  * Mapea número de mesa al agentId de OpenClaw.
  * mesa 1 = waiter-1, mesa 2 = waiter-2, mesa 3 = waiter-3
- * Mesas sin agente asignado usan "default"
  */
 function getAgentId(tableNumber: number): string {
   if (tableNumber >= 1 && tableNumber <= 3) {
     return `waiter-${tableNumber}`;
   }
-  return 'default';
+  return 'waiter-1';
 }
 
 /**
- * Envía un mensaje al gateway OpenClaw a través del proxy /api/openclaw
- * para evitar problemas de CORS.
+ * Envía un mensaje al agente OpenClaw via el bridge HTTP.
  */
 export async function sendToOpenClaw(
-  messages: OpenClawMessage[],
-  tableNumber: number,
-  sessionKey?: string
+  message: string,
+  tableNumber: number
 ): Promise<string> {
-  const agentId = getAgentId(tableNumber);
+  const agent = getAgentId(tableNumber);
 
-  const response = await fetch('/api/openclaw', {
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: `openclaw/${agentId}`,
-      messages,
-      stream: false,
-      ...(sessionKey ? { user: sessionKey } : {}),
-    }),
+    body: JSON.stringify({ message, agent }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`OpenClaw error ${response.status}: ${errorText}`);
+    const data = await response.json().catch(() => ({ error: 'Unknown' }));
+    if (data.fallback) {
+      throw new Error('FALLBACK');
+    }
+    throw new Error(`OpenClaw error ${response.status}: ${data.error}`);
   }
 
-  const data: OpenClawResponse = await response.json();
-
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('OpenClaw returned empty response');
-  }
-
-  return content;
+  const data = await response.json();
+  return data.text;
 }
 
 /**
- * Verifica si el gateway OpenClaw está disponible via el proxy.
+ * Verifica si el bridge OpenClaw está disponible.
  */
 export async function checkOpenClawHealth(): Promise<boolean> {
   try {
-    const response = await fetch('/api/openclaw/health', {
-      method: 'GET',
-      signal: AbortSignal.timeout(3000),
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'ping', agent: 'waiter-1' }),
+      signal: AbortSignal.timeout(5000),
     });
     return response.ok;
   } catch {
