@@ -18,71 +18,57 @@ export default function ConfirmDialog({ isOpen, onClose, onConfirm, total, itemC
   const handleConfirm = async () => {
     await onConfirm();
     setConfirmed(true);
-    setTimeout(() => {
-      setConfirmed(false);
-      onClose();
-    }, 3000);
+    setTimeout(() => { setConfirmed(false); onClose(); }, 2500);
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="absolute inset-0 bg-black/20" onClick={onClose} />
+          <div className="absolute inset-0 bg-black/25" onClick={onClose} />
 
           <motion.div
-            className="relative bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
+            className="relative bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+            initial={{ y: 50, scale: 0.95 }}
+            animate={{ y: 0, scale: 1 }}
+            exit={{ y: 50, scale: 0.95 }}
+            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
           >
             {!confirmed ? (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
-                  <Sparkles size={28} className="text-amber-500" />
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 mx-auto rounded-full bg-amber-50 flex items-center justify-center">
+                  <Sparkles size={24} className="text-amber-500" />
                 </div>
-                <h3 className="font-display text-xl tracking-wide text-gray-800">Confirmar Pedido</h3>
+                <h3 className="font-body font-semibold text-lg text-gray-800">Confirmar Pedido</h3>
                 <p className="text-sm text-gray-500">
-                  {itemCount} {itemCount === 1 ? 'articulo' : 'articulos'} — Total: <span className="text-amber-600 font-semibold">{total.toFixed(2)}€</span>
+                  {itemCount} {itemCount === 1 ? 'artículo' : 'artículos'} · <span className="font-semibold text-gray-800">{total.toFixed(2)}€</span>
                 </p>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={onClose}
-                    className="flex-1 py-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 font-body text-sm"
-                  >
+                <div className="flex gap-2 pt-1">
+                  <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-500 text-sm font-body active:scale-[0.98]">
                     Cancelar
                   </button>
-                  <motion.button
-                    onClick={handleConfirm}
-                    className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-display text-sm tracking-wider shadow-md"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    CONFIRMAR
-                  </motion.button>
+                  <button onClick={handleConfirm} className="flex-1 py-3 rounded-xl bg-amber-500 text-white text-sm font-body font-semibold shadow-md active:scale-[0.98]">
+                    Confirmar
+                  </button>
                 </div>
               </div>
             ) : (
-              <motion.div
-                className="text-center space-y-4 py-4"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
+              <motion.div className="text-center space-y-3 py-2" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
                 <motion.div
-                  className="w-20 h-20 mx-auto rounded-full bg-green-50 border-2 border-green-500 flex items-center justify-center"
+                  className="w-16 h-16 mx-auto rounded-full bg-green-50 border-2 border-green-500 flex items-center justify-center"
                   initial={{ scale: 0 }}
                   animate={{ scale: [0, 1.2, 1] }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.4 }}
                 >
-                  <Check size={36} className="text-green-500" />
+                  <Check size={32} className="text-green-500" />
                 </motion.div>
-                <h3 className="font-display text-xl tracking-wide text-green-600">Pedido Confirmado!</h3>
-                <p className="text-sm text-gray-500">Tu pedido llegara en breve</p>
+                <h3 className="font-body font-semibold text-lg text-green-600">¡Pedido Confirmado!</h3>
+                <p className="text-sm text-gray-500">Tu pedido llegará en breve</p>
               </motion.div>
             )}
           </motion.div>
