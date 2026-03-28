@@ -7,12 +7,15 @@ interface UseSpeechSynthesisReturn {
   stop: () => void;
   isSpeaking: boolean;
   isSupported: boolean;
+  /** Call this during a user gesture to pre-authorize TTS for the next speak() call */
+  preAuthorize: () => void;
 }
 
 export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const resumeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingUtterance = useRef<SpeechSynthesisUtterance | null>(null);
 
   const isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
@@ -21,10 +24,8 @@ export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisRe
 
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      // Prefer a Spanish voice
       const spanishVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
       voiceRef.current = spanishVoice || voices[0] || null;
-      console.log('[TTS] Voices loaded:', voices.length, 'Selected:', voiceRef.current?.name);
     };
 
     loadVoices();
@@ -35,18 +36,71 @@ export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisRe
     };
   }, [isSupported, lang]);
 
-  const speak = useCallback((text: string) => {
-    if (!isSupported || !text) {
-      console.log('[TTS] Not supported or empty text');
-      return;
-    }
+  /**
+   * Call during a user gesture (touchEnd, click) to create and queue
+   * an empty utterance. This "reserves" the audio context.
+   * Then when speak() is called later, it replaces the text.
+   */
+  const preAuthorize = useCallback(() => {
+    if (!isSupported) return;
 
-    console.log('[TTS] Speaking:', text.substring(0, 50) + '...');
-
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
-    // Small delay after cancel to avoid Chrome bug
+    // Create a placeholder utterance and queue it during the gesture
+    const utterance = new SpeechSynthesisUtterance('');
+    utterance.lang = lang;
+    utterance.rate = 0.9;
+    utterance.volume = 1;
+
+    if (voiceRef.current) {
+      utterance.voice = voiceRef.current;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      clearResumeInterval();
+    };
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      clearResumeInterval();
+    };
+
+    // Store it — speak() will cancel this and speak the real text
+    // But the audio context is now authorized
+    pendingUtterance.current = utterance;
+    window.speechSynthesis.speak(utterance);
+
+    // Start resume interval for Chrome
+    startResumeInterval();
+  }, [isSupported, lang]);
+
+  const startResumeInterval = () => {
+    clearResumeInterval();
+    resumeInterval.current = setInterval(() => {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.resume();
+      } else {
+        clearResumeInterval();
+      }
+    }, 5000);
+  };
+
+  const clearResumeInterval = () => {
+    if (resumeInterval.current) {
+      clearInterval(resumeInterval.current);
+      resumeInterval.current = null;
+    }
+  };
+
+  const speak = useCallback((text: string) => {
+    if (!isSupported || !text) return;
+
+    // Cancel the pre-authorized empty utterance (or any ongoing speech)
+    window.speechSynthesis.cancel();
+    pendingUtterance.current = null;
+
+    // Small delay after cancel
     setTimeout(() => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
@@ -58,56 +112,29 @@ export function useSpeechSynthesis(lang: string = 'es-ES'): UseSpeechSynthesisRe
         utterance.voice = voiceRef.current;
       }
 
-      utterance.onstart = () => {
-        console.log('[TTS] Started speaking');
-        setIsSpeaking(true);
-      };
-
+      utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
-        console.log('[TTS] Finished speaking');
         setIsSpeaking(false);
-        if (resumeInterval.current) {
-          clearInterval(resumeInterval.current);
-          resumeInterval.current = null;
-        }
+        clearResumeInterval();
       };
-
-      utterance.onerror = (e) => {
-        console.error('[TTS] Error:', e.error);
+      utterance.onerror = () => {
         setIsSpeaking(false);
-        if (resumeInterval.current) {
-          clearInterval(resumeInterval.current);
-          resumeInterval.current = null;
-        }
+        clearResumeInterval();
       };
 
       window.speechSynthesis.speak(utterance);
-
-      // Chrome mobile bug: speech pauses after ~15 seconds
-      // Workaround: periodically call resume()
-      resumeInterval.current = setInterval(() => {
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.resume();
-        } else {
-          if (resumeInterval.current) {
-            clearInterval(resumeInterval.current);
-            resumeInterval.current = null;
-          }
-        }
-      }, 5000);
-    }, 100);
+      startResumeInterval();
+    }, 50);
   }, [isSupported, lang]);
 
   const stop = useCallback(() => {
     if (isSupported) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
-      if (resumeInterval.current) {
-        clearInterval(resumeInterval.current);
-        resumeInterval.current = null;
-      }
+      clearResumeInterval();
+      pendingUtterance.current = null;
     }
   }, [isSupported]);
 
-  return { speak, stop, isSpeaking, isSupported };
+  return { speak, stop, isSpeaking, isSupported, preAuthorize };
 }

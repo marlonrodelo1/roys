@@ -31,12 +31,11 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
   } = useWaiterAI(restaurant, categories, menuItems, tableNumber);
 
   const { transcript, isListening, startListening, stopListening, isSupported: sttSupported } = useSpeechRecognition(lang);
-  const { speak, isSpeaking } = useSpeechSynthesis(lang);
+  const { speak, isSpeaking, preAuthorize } = useSpeechSynthesis(lang);
 
   const [orderPanelOpen, setOrderPanelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [greeted, setGreeted] = useState(false);
-  const ttsUnlocked = useRef(false);
   const pendingVoiceResponse = useRef(false);
 
   // Auto-greet on mount (text only)
@@ -64,29 +63,18 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
     }
   }, [isSpeaking, orbState, setOrbState]);
 
-  // Unlock TTS on first user touch (required by mobile browsers)
-  const unlockTTS = useCallback(() => {
-    if (!ttsUnlocked.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      // Speak a real short word to fully unlock audio context
-      const utterance = new SpeechSynthesisUtterance('.');
-      utterance.volume = 0.01;
-      utterance.rate = 10; // fastest possible so it's instant
-      window.speechSynthesis.speak(utterance);
-      ttsUnlocked.current = true;
-      console.log('[TTS] Unlocked via user gesture');
-    }
-  }, []);
-
   const handleStartListening = useCallback(() => {
     if (isSpeaking) return;
-    unlockTTS(); // Unlock TTS on user gesture
     startListening();
     pendingVoiceResponse.current = true;
-  }, [isSpeaking, startListening, unlockTTS]);
+  }, [isSpeaking, startListening]);
 
   const handleStopListening = useCallback(() => {
     stopListening();
-  }, [stopListening]);
+    // Pre-authorize TTS RIGHT NOW during the user gesture (touchEnd)
+    // This reserves the audio context so speak() works later
+    preAuthorize();
+  }, [stopListening, preAuthorize]);
 
   // When listening stops and we have a transcript, process with voice response
   useEffect(() => {
