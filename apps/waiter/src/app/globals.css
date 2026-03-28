@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050508;
+  --orb-idle: radial-gradient(circle, #1a1a3e, #0a0a1a);
+  --orb-listening: radial-gradient(circle, #E94560, #8b1a2b);
+  --orb-speaking: radial-gradient(circle, #00d4ff, #0F3460);
+  --orb-thinking: radial-gradient(circle, #16C79A, #0a3d2e);
+  --accent: #E94560;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg);
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes orbit-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}

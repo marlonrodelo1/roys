@@ -1,0 +1,21 @@
+{
+  "name": "roys",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:landing\" \"npm run dev:dashboard\" \"npm run dev:waiter\"",
+    "dev:landing": "cd apps/landing && next dev -p 3000",
+    "dev:dashboard": "cd apps/dashboard && next dev -p 3001",
+    "dev:waiter": "cd apps/waiter && next dev -p 3002",
+    "build": "npm run build --workspaces",
+    "seed": "node supabase/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}
