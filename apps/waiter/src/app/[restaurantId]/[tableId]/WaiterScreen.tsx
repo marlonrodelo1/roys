@@ -96,9 +96,7 @@ export default function WaiterScreen({ restaurant, categories, menuItems, tableN
 
   const handleConfirmOrder = useCallback(async () => {
     await confirmOrder();
-    if (ttsUnlocked.current) {
-      speak('Pedido confirmado. Tu pedido llegara en breve.');
-    }
+    speak('Pedido confirmado. Tu pedido llegara en breve.');
   }, [confirmOrder, speak]);
 
   return (
