@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Waiter — Test de Voz</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 40px;
+      width: 420px;
+      text-align: center;
+    }
+    h1 { font-size: 22px; margin-bottom: 6px; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+    .mesa-row {
+      display: flex; gap: 8px; margin-bottom: 24px; align-items: center;
+    }
+    label { color: #888; font-size: 13px; white-space: nowrap; }
+    input {
+      flex: 1;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    .btn-record {
+      background: #e53935;
+      color: #fff;
+    }
+    .btn-record:hover { background: #c62828; }
+    .btn-record.recording {
+      background: #333;
+      color: #e53935;
+      border: 2px solid #e53935;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(229,57,53,0); }
+    }
+    .btn-send {
+      background: #1976d2;
+      color: #fff;
+    }
+    .btn-send:disabled { background: #333; color: #666; cursor: not-allowed; }
+    .btn-send:not(:disabled):hover { background: #1565c0; }
+    .status {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+      text-align: left;
+    }
+    .status.info { background: #1a2a3a; border: 1px solid #1976d2; color: #90caf9; display: block; }
+    .status.success { background: #1a2f1a; border: 1px solid #388e3c; color: #a5d6a7; display: block; }
+    .status.error { background: #2f1a1a; border: 1px solid #c62828; color: #ef9a9a; display: block; }
+    .result-box {
+      margin-top: 16px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: left;
+      display: none;
+    }
+    .result-box h3 { font-size: 13px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .item-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1f1f1f; font-size: 14px; }
+    .item-row:last-of-type { border-bottom: none; }
+    .total-row { display: flex; justify-content: space-between; padding-top: 10px; font-size: 16px; font-weight: 700; color: #fff; }
+    .transcript { font-style: italic; color: #aaa; font-size: 13px; margin-bottom: 10px; }
+    audio { width: 100%; margin-bottom: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🎤 Smart Waiter</h1>
+  <p class="subtitle">Test de pedido por voz</p>
+
+  <div class="mesa-row">
+    <label>Mesa (QR token):</label>
+    <input type="text" id="tableToken" value="qr_demo_mesa1_sw2026" />
+  </div>
+
+  <button class="btn btn-record" id="btnRecord" onclick="toggleRecord()">
+    ⏺ Pulsa y habla tu pedido
+  </button>
+
+  <div id="audioPreview" style="display:none">
+    <audio id="audioPlayer" controls></audio>
+  </div>
+
+  <button class="btn btn-send" id="btnSend" disabled onclick="sendOrder()">
+    📤 Enviar pedido
+  </button>
+
+  <div class="status" id="status"></div>
+
+  <div class="result-box" id="resultBox">
+    <h3>Pedido confirmado</h3>
+    <div class="transcript" id="transcript"></div>
+    <div id="itemsList"></div>
+    <div class="total-row">
+      <span>Total</span>
+      <span id="total"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const N8N_WEBHOOK = 'https://rogotech-n8n.qyklvu.easypanel.host/webhook/order/voice';
+
+  let mediaRecorder, audioChunks = [], audioBlob = null, isRecording = false;
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  async function toggleRecord() {
+    if (!isRecording) {
+      await startRecording();
+    } else {
+      stopRecording();
+    }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        document.getElementById('audioPlayer').src = url;
+        document.getElementById('audioPreview').style.display = 'block';
+        document.getElementById('btnSend').disabled = false;
+        stream.getTracks().forEach(t => t.stop());
+        setStatus('Audio grabado. Escúchalo y pulsa "Enviar pedido".', 'info');
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      const btn = document.getElementById('btnRecord');
+      btn.textContent = '⏹ Parar grabación';
+      btn.classList.add('recording');
+      setStatus('Grabando... habla tu pedido y pulsa parar.', 'info');
+    } catch (e) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('⚠️ El micrófono no funciona aquí. Abre este archivo directamente en Chrome: doble clic en test-voice.html', 'error');
+      } else {
+        setStatus('Error al acceder al micrófono: ' + e.message, 'error');
+      }
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorder.stop();
+    isRecording = false;
+    const btn = document.getElementById('btnRecord');
+    btn.textContent = '⏺ Grabar otro pedido';
+    btn.classList.remove('recording');
+  }
+
+  async function sendOrder() {
+    if (!audioBlob) return;
+    const tableToken = document.getElementById('tableToken').value.trim();
+
+    document.getElementById('btnSend').disabled = true;
+    document.getElementById('resultBox').style.display = 'none';
+    setStatus('Subiendo audio...', 'info');
+
+    try {
+      // Subir el audio a transfer.sh (servicio público temporal)
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'pedido.webm');
+
+      setStatus('Subiendo audio a servidor temporal...', 'info');
+      const upload = await fetch('https://transfer.sh/pedido.webm', {
+        method: 'PUT',
+        body: audioBlob,
+        headers: { 'Max-Days': '1' }
+      });
+
+      if (!upload.ok) throw new Error('Error al subir audio: ' + upload.status);
+      const audioUrl = await upload.text();
+
+      setStatus('Procesando pedido con IA... (5-10 segundos)', 'info');
+
+      // Llamar al webhook de F01
+      const resp = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audio_url: audioUrl.trim(),
+          table_token: tableToken
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok || !data.success) {
+        throw new Error(data.message || data.error || JSON.stringify(data));
+      }
+
+      // Mostrar resultado
+      setStatus('✅ Pedido recibido en cocina.', 'success');
+      document.getElementById('transcript').textContent = '"' + (data.transcript || '') + '"';
+
+      const list = document.getElementById('itemsList');
+      list.innerHTML = (data.items_confirmed || []).map(i =>
+        `<div class="item-row"><span>${i.quantity}x ${i.name}</span><span>€${(i.unit_price * i.quantity).toFixed(2)}</span></div>`
+      ).join('');
+
+      document.getElementById('total').textContent = '€' + (data.total || 0).toFixed(2);
+      document.getElementById('resultBox').style.display = 'block';
+
+    } catch (e) {
+      setStatus('Error: ' + e.message, 'error');
+      document.getElementById('btnSend').disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
